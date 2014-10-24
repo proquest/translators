@@ -7,9 +7,9 @@
 	"maxVersion": "",
 	"priority": 100,
 	"inRepository": true,
-	"translatorType": 4,
-	"browserSupport": "gcsibv",
-	"lastUpdated": "2014-10-02 17:36:32"
+	"translatorType": 5,
+	"browserSupport": "gcsib",
+	"lastUpdated": "2014-10-23 16:56:41"
 }
 
 /*
@@ -168,8 +168,10 @@ function doWeb(doc, url, pdfUrl) {
 		scrape(doc, url, type, pdfUrl);
 	} else if(type == "multiple") {
 		// detect web returned multiple
-		var results = ZU.xpath(doc, '//a[contains(@class,"previewTitle") or\
-									contains(@class,"resultTitle")]');
+		var results = ZU.xpath(doc, '//div[contains(@id, "Results-content") and not(contains(@style, "display:") and contains(@style, "none"))]//\
+									div[contains(@class, "resultListContainer")]//\
+									a[contains(@class,"previewTitle") or contains(@class,"resultTitle")]');
+									
 		// If the above didn't get us titles, try agin with a more liberal xPath
 		if (!results.length) {
 			results = ZU.xpath(doc, '//a[contains(@href, "/docview/")]');
@@ -184,11 +186,25 @@ function doWeb(doc, url, pdfUrl) {
 			if (!items) return true;
 
 			var articles = new Array();
-			for (var i in items) {
-				ZU.processDocuments(i,
-					//call doWeb so that we rerun detectWeb to get type and
-					//initialize translations
-					function(doc) { doWeb(doc, doc.location.href) });
+			for (var i in items) {				
+				if(i.indexOf("ebraryresults") > -1) {
+					ZU.processDocuments(i,
+						function(doc) {
+							var translator = Zotero.loadTranslator("web");
+							translator.setTranslator("2abe2519-2f0a-48c0-ad3a-b87b9c059459");
+							translator.setDocument(doc);
+							translator.setHandler("itemDone", function(obj, item) {
+								item.complete();
+							});
+							translator.translate();
+						});
+				}
+				else {
+					ZU.processDocuments(i,
+						//call doWeb so that we rerun detectWeb to get type and
+						//initialize translations
+						function(doc) { doWeb(doc, doc.location.href) });
+				}
 			}
 		});
 	//pdfUrl should be undefined unless we are calling doWeb from the following
